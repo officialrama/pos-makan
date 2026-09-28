@@ -22,9 +22,9 @@ const QUICK: { value: Quick; label: string }[] = [
 ];
 
 export default function AdminOrdersPage() {
-  const { orders, setOrderStatus, setOrdersHidden } = useStore();
+  const { orders, setOrderStatus, setOrdersHidden, canManageHidden } = useStore();
 
-  const [tab, setTab] = useState<Tab>("aktif");
+  const [chosenTab, setChosenTab] = useState<Tab>("aktif");
   const [quick, setQuick] = useState<Quick>("7-hari");
   const [from, setFrom] = useState(shiftDays(-6));
   const [to, setTo] = useState(toDateKey(new Date()));
@@ -35,6 +35,8 @@ export default function AdminOrdersPage() {
   const [notice, setNotice] = useState<{ ids: string[]; hidden: boolean } | null>(
     null,
   );
+
+  const tab: Tab = canManageHidden ? chosenTab : "aktif";
 
   // Pesan konfirmasi cukup tampil sebentar.
   useEffect(() => {
@@ -95,6 +97,7 @@ export default function AdminOrdersPage() {
   const selectedRows = rows.filter((o) => selected.includes(o.id));
   const allChecked = rows.length > 0 && selectedRows.length === rows.length;
   const someChecked = selectedRows.length > 0 && !allChecked;
+  const columnCount = canManageHidden ? 8 : 6;
 
   const revenue = rows
     .filter((o) => o.status !== "batal")
@@ -105,7 +108,7 @@ export default function AdminOrdersPage() {
   );
 
   function switchTab(next: Tab) {
-    setTab(next);
+    setChosenTab(next);
     setSelected([]);
     setOpenId(null);
     setNotice(null);
@@ -123,7 +126,7 @@ export default function AdminOrdersPage() {
 
   /** Pindahkan pesanan antara riwayat utama dan riwayat tersembunyi. */
   function applyHidden(ids: string[], hidden: boolean) {
-    if (ids.length === 0) return;
+    if (ids.length === 0 || !canManageHidden) return;
     setOrdersHidden(ids, hidden);
     setSelected([]);
     setOpenId(null);
@@ -141,27 +144,29 @@ export default function AdminOrdersPage() {
       <h1 className="text-xl">Riwayat pesanan</h1>
       <p className="mt-1 text-sm text-ink-500">
         Saring pesanan berdasarkan tanggal, status, atau nama pemesan. Klik kode
-        pesanan untuk melihat rincian item dan mengubah statusnya. Centang
-        pesanan lalu sembunyikan bila tidak ingin tampil di riwayat utama —
-        datanya tetap tersimpan di tab Riwayat tersembunyi.
+        pesanan untuk melihat rincian item dan mengubah statusnya.
+        {canManageHidden &&
+          " Centang pesanan lalu sembunyikan bila tidak ingin tampil di riwayat utama — datanya tetap tersimpan di tab Riwayat tersembunyi."}
       </p>
 
-      <div className="mt-5 flex flex-wrap gap-1 border-b border-line">
-        <TabButton
-          active={tab === "aktif"}
-          count={activeRows.length}
-          onClick={() => switchTab("aktif")}
-        >
-          Riwayat pesanan
-        </TabButton>
-        <TabButton
-          active={tab === "tersembunyi"}
-          count={hiddenTotal}
-          onClick={() => switchTab("tersembunyi")}
-        >
-          Riwayat tersembunyi
-        </TabButton>
-      </div>
+      {canManageHidden && (
+        <div className="mt-5 flex flex-wrap gap-1 border-b border-line">
+          <TabButton
+            active={tab === "aktif"}
+            count={activeRows.length}
+            onClick={() => switchTab("aktif")}
+          >
+            Riwayat pesanan
+          </TabButton>
+          <TabButton
+            active={tab === "tersembunyi"}
+            count={hiddenTotal}
+            onClick={() => switchTab("tersembunyi")}
+          >
+            Riwayat tersembunyi
+          </TabButton>
+        </div>
+      )}
 
       <section className="card mt-4 p-5">
         <div className="flex flex-wrap gap-2">
@@ -244,7 +249,7 @@ export default function AdminOrdersPage() {
         </div>
       </section>
 
-      {notice && (
+      {canManageHidden && notice && (
         <div
           role="status"
           className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-white px-4 py-3 text-sm"
@@ -285,7 +290,7 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {tab === "aktif" && hiddenTotal > 0 && (
+      {canManageHidden && tab === "aktif" && hiddenTotal > 0 && (
         <p className="mt-3 text-xs text-ink-500">
           {hiddenTotal} pesanan sedang disembunyikan dan tidak ikut dihitung pada
           ringkasan di atas.{" "}
@@ -298,70 +303,74 @@ export default function AdminOrdersPage() {
           </button>
         </p>
       )}
-      {tab === "tersembunyi" && (
+      {canManageHidden && tab === "tersembunyi" && (
         <p className="mt-3 text-xs text-ink-500">
           Ringkasan ini hanya menghitung pesanan yang sedang disembunyikan.
           Datanya tetap tersimpan dan bisa dimunculkan kembali kapan saja.
         </p>
       )}
 
-      <div
-        className={`mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm ${
-          selectedRows.length > 0
-            ? "border-brand-500 bg-brand-50"
-            : "border-line bg-white"
-        }`}
-      >
-        <p className={selectedRows.length > 0 ? "text-brand-700" : "text-ink-500"}>
-          {selectedRows.length > 0
-            ? `${selectedRows.length} pesanan dipilih`
-            : "Centang pesanan untuk memilih beberapa sekaligus."}
-        </p>
-        <div className="flex flex-wrap items-center gap-1">
-          {selectedRows.length > 0 && (
+      {canManageHidden && (
+        <div
+          className={`mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm ${
+            selectedRows.length > 0
+              ? "border-brand-500 bg-brand-50"
+              : "border-line bg-white"
+          }`}
+        >
+          <p className={selectedRows.length > 0 ? "text-brand-700" : "text-ink-500"}>
+            {selectedRows.length > 0
+              ? `${selectedRows.length} pesanan dipilih`
+              : "Centang pesanan untuk memilih beberapa sekaligus."}
+          </p>
+          <div className="flex flex-wrap items-center gap-1">
+            {selectedRows.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelected([])}
+                className="btn-ghost btn-sm"
+              >
+                Batalkan pilihan
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setSelected([])}
-              className="btn-ghost btn-sm"
+              disabled={selectedRows.length === 0}
+              onClick={() => applyHidden(selectedRows.map((o) => o.id), tab === "aktif")}
+              className="btn-outline btn-sm"
             >
-              Batalkan pilihan
+              {tab === "aktif" ? "Sembunyikan terpilih" : "Munculkan kembali terpilih"}
             </button>
-          )}
-          <button
-            type="button"
-            disabled={selectedRows.length === 0}
-            onClick={() => applyHidden(selectedRows.map((o) => o.id), tab === "aktif")}
-            className="btn-outline btn-sm"
-          >
-            {tab === "aktif" ? "Sembunyikan terpilih" : "Munculkan kembali terpilih"}
-          </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card mt-4 overflow-x-auto">
-        <table className="w-full min-w-[880px]">
+        <table className={`w-full ${canManageHidden ? "min-w-[880px]" : "min-w-[760px]"}`}>
           <thead className="border-b border-line bg-canvas">
             <tr>
-              <th className="table-head w-10">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-brand-500"
-                  checked={allChecked}
-                  ref={(el) => {
-                    if (el) el.indeterminate = someChecked;
-                  }}
-                  disabled={rows.length === 0}
-                  onChange={toggleAll}
-                  aria-label="Pilih semua pesanan pada tabel ini"
-                />
-              </th>
+              {canManageHidden && (
+                <th className="table-head w-10">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-brand-500"
+                    checked={allChecked}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someChecked;
+                    }}
+                    disabled={rows.length === 0}
+                    onChange={toggleAll}
+                    aria-label="Pilih semua pesanan pada tabel ini"
+                  />
+                </th>
+              )}
               <th className="table-head">Kode</th>
               <th className="table-head">Waktu</th>
               <th className="table-head">Pemesan</th>
               <th className="table-head">Pembayaran</th>
               <th className="table-head text-right">Total</th>
               <th className="table-head">Status</th>
-              <th className="table-head text-right">Aksi</th>
+              {canManageHidden && <th className="table-head text-right">Aksi</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -375,15 +384,17 @@ export default function AdminOrdersPage() {
                     checked ? "bg-brand-50/60" : open ? "bg-canvas/60" : ""
                   }
                 >
-                  <td className="table-cell">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-brand-500"
-                      checked={checked}
-                      onChange={() => toggleRow(o.id)}
-                      aria-label={`Pilih pesanan ${o.code}`}
-                    />
-                  </td>
+                  {canManageHidden && (
+                    <td className="table-cell">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-brand-500"
+                        checked={checked}
+                        onChange={() => toggleRow(o.id)}
+                        aria-label={`Pilih pesanan ${o.code}`}
+                      />
+                    </td>
+                  )}
                   <td className="table-cell">
                     <button
                       type="button"
@@ -463,21 +474,26 @@ export default function AdminOrdersPage() {
                   <td className="table-cell">
                     <StatusBadge status={o.status} />
                   </td>
-                  <td className="table-cell text-right">
-                    <button
-                      type="button"
-                      onClick={() => applyHidden([o.id], !o.hidden)}
-                      className="whitespace-nowrap text-sm text-ink-500 underline underline-offset-2 hover:text-ink-900"
-                    >
-                      {o.hidden ? "Munculkan" : "Sembunyikan"}
-                    </button>
-                  </td>
+                  {canManageHidden && (
+                    <td className="table-cell text-right">
+                      <button
+                        type="button"
+                        onClick={() => applyHidden([o.id], !o.hidden)}
+                        className="whitespace-nowrap text-sm text-ink-500 underline underline-offset-2 hover:text-ink-900"
+                      >
+                        {o.hidden ? "Munculkan" : "Sembunyikan"}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="table-cell py-12 text-center text-ink-500">
+                <td
+                  colSpan={columnCount}
+                  className="table-cell py-12 text-center text-ink-500"
+                >
                   {tab === "aktif"
                     ? "Tidak ada pesanan pada rentang tanggal ini."
                     : hiddenTotal === 0

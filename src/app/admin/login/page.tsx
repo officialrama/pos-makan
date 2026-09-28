@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { useStore, ADMIN_USER, ADMIN_PASS } from "@/lib/store";
+import { useStore, ADMIN_ACCOUNTS } from "@/lib/store";
+import { ROLE_LABEL } from "@/lib/types";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -86,11 +87,25 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <p className="mt-5 rounded-md bg-canvas p-3 text-xs leading-relaxed text-ink-500">
-          Akun demo untuk mockup — username <code className="font-semibold">{ADMIN_USER}</code>,
-          password <code className="font-semibold">{ADMIN_PASS}</code>. Pada aplikasi
-          sungguhan, login diverifikasi di server.
-        </p>
+        <div className="mt-5 rounded-md bg-canvas p-3 text-xs leading-relaxed text-ink-500">
+          <p className="font-medium text-ink-700">Akun demo untuk mockup</p>
+          <ul className="mt-1.5 space-y-1">
+            {ADMIN_ACCOUNTS.map((a) => (
+              <li key={a.username}>
+                <code className="font-semibold">{a.username}</code> /{" "}
+                <code className="font-semibold">{a.password}</code> —{" "}
+                {ROLE_LABEL[a.role]}
+                {a.role === "utama"
+                  ? " (bisa membuka riwayat tersembunyi)"
+                  : " (tanpa akses riwayat tersembunyi)"}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2">
+            Pada aplikasi sungguhan, login dan pembatasan aksesnya diverifikasi
+            di server.
+          </p>
+        </div>
       </div>
     </main>
   );

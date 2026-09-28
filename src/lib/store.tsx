@@ -10,16 +10,30 @@ import {
   type ReactNode,
 } from "react";
 import { SEED_MENU, SEED_ORDERS } from "./seed";
-import type { MenuItem, Order, OrderItem, PaymentMethod, OrderStatus } from "./types";
+import type {
+  AdminRole,
+  AdminSession,
+  MenuItem,
+  Order,
+  OrderItem,
+  PaymentMethod,
+  OrderStatus,
+} from "./types";
 
 const KEY_MENU = "padang.menus";
 const KEY_ORDER = "padang.orders";
 const KEY_CART = "padang.cart";
 const KEY_ADMIN = "padang.admin";
 
-/** Kredensial demo. Di aplikasi asli ini diganti autentikasi server. */
-export const ADMIN_USER = "admin";
-export const ADMIN_PASS = "admin123";
+export interface AdminAccount extends AdminSession {
+  password: string;
+}
+
+/** Akun demo. Di aplikasi asli ini diganti autentikasi server. */
+export const ADMIN_ACCOUNTS: AdminAccount[] = [
+  { username: "admin", password: "admin123", role: "utama" },
+  { username: "staf", password: "staf123", role: "staf" },
+];
 
 export interface CartLine {
   qty: number;
@@ -43,6 +57,16 @@ function normalizeCart(raw: unknown): Cart {
   return out;
 }
 
+/** Sesi versi lama hanya berupa boolean — anggap itu admin utama. */
+function normalizeSession(raw: unknown): AdminSession | null {
+  if (raw === true) return { username: "admin", role: "utama" };
+  if (!raw || typeof raw !== "object") return null;
+  const username = (raw as Partial<AdminSession>).username;
+  const account = ADMIN_ACCOUNTS.find((a) => a.username === username);
+  // Peran selalu diambil ulang dari daftar akun, bukan dari isi localStorage.
+  return account ? { username: account.username, role: account.role } : null;
+}
+
 interface StoreValue {
   ready: boolean;
   menus: MenuItem[];
@@ -52,6 +76,10 @@ interface StoreValue {
   cartCount: number;
   cartTotal: number;
   isAdmin: boolean;
+  session: AdminSession | null;
+  role: AdminRole | null;
+  /** Hanya admin utama yang boleh melihat & mengatur riwayat tersembunyi. */
+  canManageHidden: boolean;
   setQty: (menuId: string, qty: number, note?: string) => void;
   setItemNote: (menuId: string, note: string) => void;
   clearCart: () => void;
@@ -97,14 +125,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [menus, setMenus] = useState<MenuItem[]>(SEED_MENU);
   const [orders, setOrders] = useState<Order[]>(SEED_ORDERS);
   const [cart, setCart] = useState<Cart>({});
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [session, setSession] = useState<AdminSession | null>(null);
 
   // Data dibaca setelah mount supaya markup server & client tetap sama.
   useEffect(() => {
     setMenus(read<MenuItem[]>(KEY_MENU, SEED_MENU));
     setOrders(read<Order[]>(KEY_ORDER, SEED_ORDERS));
     setCart(normalizeCart(read<unknown>(KEY_CART, {})));
-    setIsAdmin(read<boolean>(KEY_ADMIN, false));
+    setSession(normalizeSession(read<unknown>(KEY_ADMIN, null)));
     setReady(true);
   }, []);
 
@@ -118,8 +146,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (ready) write(KEY_CART, cart);
   }, [cart, ready]);
   useEffect(() => {
-    if (ready) write(KEY_ADMIN, isAdmin);
-  }, [isAdmin, ready]);
+    if (ready) write(KEY_ADMIN, session);
+  }, [session, ready]);
 
   const setQty = useCallback((menuId: string, qty: number, note?: string) => {
     setCart((prev) => {
@@ -225,21 +253,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
   }, []);
 
-  const setOrdersHidden = useCallback((ids: string[], hidden: boolean) => {
-    if (ids.length === 0) return;
-    const target = new Set(ids);
-    setOrders((prev) =>
-      prev.map((o) => (target.has(o.id) ? { ...o, hidden } : o)),
-    );
-  }, []);
+  const setOrdersHidden = useCallback(
+    (ids: string[], hidden: boolean) => {
+      if (ids.length === 0 || session?.role !== "utama") return;
+      const target = new Set(ids);
+      setOrders((prev) =>
+        prev.map((o) => (target.has(o.id) ? { ...o, hidden } : o)),
+      );
+    },
+    [session],
+  );
 
   const login = useCallback((user: string, pass: string) => {
-    const ok = user.trim() === ADMIN_USER && pass === ADMIN_PASS;
-    if (ok) setIsAdmin(true);
-    return ok;
+    const account = ADMIN_ACCOUNTS.find(
+      (a) => a.username === user.trim().toLowerCase() && a.password === pass,
+    );
+    if (!account) return false;
+    setSession({ username: account.username, role: account.role });
+    return true;
   }, []);
 
-  const logout = useCallback(() => setIsAdmin(false), []);
+  const logout = useCallback(() => setSession(null), []);
 
   const resetDemo = useCallback(() => {
     setMenus(SEED_MENU);
@@ -255,7 +289,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     cartItems,
     cartCount,
     cartTotal,
-    isAdmin,
+    isAdmin: session !== null,
+    session,
+    role: session?.role ?? null,
+    canManageHidden: session?.role === "utama",
     setQty,
     setItemNote,
     clearCart,

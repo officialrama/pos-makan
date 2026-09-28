@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
+import { ROLE_LABEL } from "@/lib/types";
 
 const NAV = [
   { href: "/admin/pesanan", label: "Riwayat pesanan" },
@@ -13,7 +14,7 @@ const NAV = [
 export default function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAdmin, ready, logout, resetDemo } = useStore();
+  const { isAdmin, ready, logout, resetDemo, session } = useStore();
 
   const isLoginPage = pathname === "/admin/login";
 
@@ -43,6 +44,20 @@ export default function AdminShell({ children }: { children: ReactNode }) {
               <span className="block text-[15px] font-semibold">Panel Admin</span>
               <span className="block text-xs text-ink-500">RM Padang Garuda</span>
             </span>
+            {session && (
+              <span className="ml-1.5 hidden items-center gap-2 border-l border-line pl-3 sm:inline-flex">
+                <span className="text-sm text-ink-700">{session.username}</span>
+                <span
+                  className={`badge ${
+                    session.role === "utama"
+                      ? "bg-brand-50 text-brand-700"
+                      : "bg-canvas text-ink-700"
+                  }`}
+                >
+                  {ROLE_LABEL[session.role]}
+                </span>
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Link href="/menu" className="btn-ghost btn-sm">

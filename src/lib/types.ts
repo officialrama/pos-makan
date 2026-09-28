@@ -46,6 +46,21 @@ export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
   transfer: "Transfer Bank",
 };
 
+/**
+ * "utama" boleh mengelola riwayat tersembunyi, "staf" tidak pernah melihatnya.
+ */
+export type AdminRole = "utama" | "staf";
+
+export interface AdminSession {
+  username: string;
+  role: AdminRole;
+}
+
+export const ROLE_LABEL: Record<AdminRole, string> = {
+  utama: "Admin utama",
+  staf: "Admin",
+};
+
 export const STATUS_LABEL: Record<OrderStatus, string> = {
   menunggu: "Menunggu bayar",
   dibayar: "Sudah dibayar",
