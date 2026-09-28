@@ -35,7 +35,7 @@ export const SEED_ORDERS: Order[] = [
       { menuId: "m04", name: "Ayam Cabai Hijau", price: 24000, qty: 2 },
       { menuId: "m06", name: "Sayur Daun Ubi Tumbuk", price: 8000, qty: 1 },
     ],
-    total: 56000, paymentMethod: "transfer", status: "dibayar", createdAt: isoAt(0, 12, 45),
+    total: 56000, paymentMethod: "transfer", status: "selesai", createdAt: isoAt(0, 12, 45),
   },
   {
     id: "o1003", code: "PD-1003", customerName: "Pak Dedi", tableNo: "2", note: "",

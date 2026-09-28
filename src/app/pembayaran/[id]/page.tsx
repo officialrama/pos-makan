@@ -65,7 +65,8 @@ export default function PaymentPage() {
 
   function confirmPaid() {
     if (!order) return;
-    setOrderStatus(order.id, "dibayar");
+    // Tidak ada status antara: begitu dibayar, pesanan langsung selesai.
+    setOrderStatus(order.id, "selesai");
     router.push(`/struk/${order.id}`);
   }
 

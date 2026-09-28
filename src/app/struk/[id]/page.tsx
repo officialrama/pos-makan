@@ -9,14 +9,11 @@ import { PAYMENT_LABEL, type Order } from "@/lib/types";
 
 const STEPS = [
   { key: "dibuat", title: "Pesanan dibuat", detail: "Pesanan tercatat di sistem kasir." },
-  { key: "dibayar", title: "Pembayaran diterima", detail: "Kasir mengonfirmasi pembayaran." },
-  { key: "selesai", title: "Pesanan selesai", detail: "Makanan sudah diantar ke meja atau dibungkus." },
+  { key: "selesai", title: "Pesanan selesai", detail: "Pembayaran diterima, makanan diantar ke meja atau dibungkus." },
 ];
 
 function stepIndex(order: Order): number {
-  if (order.status === "selesai") return 2;
-  if (order.status === "dibayar") return 1;
-  return 0;
+  return order.status === "selesai" ? 1 : 0;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

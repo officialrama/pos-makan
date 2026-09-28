@@ -24,7 +24,7 @@ export interface OrderItem {
 
 export type PaymentMethod = "qris" | "transfer";
 
-export type OrderStatus = "menunggu" | "dibayar" | "selesai" | "batal";
+export type OrderStatus = "menunggu" | "selesai" | "batal";
 
 export interface Order {
   id: string;
@@ -63,7 +63,6 @@ export const ROLE_LABEL: Record<AdminRole, string> = {
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
   menunggu: "Menunggu bayar",
-  dibayar: "Sudah dibayar",
   selesai: "Selesai",
   batal: "Dibatalkan",
 };

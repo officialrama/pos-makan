@@ -57,6 +57,14 @@ function normalizeCart(raw: unknown): Cart {
   return out;
 }
 
+/** Status "dibayar" sudah dihapus — pesanan lama yang memakainya jadi selesai. */
+function normalizeOrders(raw: unknown): Order[] {
+  if (!Array.isArray(raw)) return SEED_ORDERS;
+  return (raw as Order[]).map((o) =>
+    (o.status as string) === "dibayar" ? { ...o, status: "selesai" } : o,
+  );
+}
+
 /** Sesi versi lama hanya berupa boolean — anggap itu admin utama. */
 function normalizeSession(raw: unknown): AdminSession | null {
   if (raw === true) return { username: "admin", role: "utama" };
@@ -130,7 +138,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Data dibaca setelah mount supaya markup server & client tetap sama.
   useEffect(() => {
     setMenus(read<MenuItem[]>(KEY_MENU, SEED_MENU));
-    setOrders(read<Order[]>(KEY_ORDER, SEED_ORDERS));
+    setOrders(normalizeOrders(read<unknown>(KEY_ORDER, SEED_ORDERS)));
     setCart(normalizeCart(read<unknown>(KEY_CART, {})));
     setSession(normalizeSession(read<unknown>(KEY_ADMIN, null)));
     setReady(true);
